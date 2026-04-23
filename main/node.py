@@ -24,7 +24,13 @@ hf_api=os.getenv("hf_api")
 groq_api=os.getenv("groq_api")
 
 
-research_model=ChatGroq(
+facts_retrival_model=ChatGroq(
+    model="llama-3.3-70b-versatile",
+    api_key=SecretStr(groq_api) if groq_api else None,
+    temperature=0.1 
+)
+
+information_retrival_model=ChatGroq(
     model="llama-3.3-70b-versatile",
     api_key=SecretStr(groq_api) if groq_api else None,
     temperature=0.1 
@@ -79,57 +85,92 @@ middleware_model=ChatGroq(
     temperature=0.1
 )
 
-summarization_limit=SummarizationMiddleware(
-                model=middleware_model,
-                tigger=('tokens',6000),
-                keep=('messages',3)
-            )
+# summarization_limit=SummarizationMiddleware(
+#                 model=middleware_model,
+#                 tigger=('tokens',6000),
+#                 keep=('messages',3)
+#             )
 
-wiki_tool_limit=ToolCallLimitMiddleware(tool_name='wikipedia_retriever_tool',thread_limit=5, run_limit=3)
-websearch_tool_limit=ToolCallLimitMiddleware(tool_name='websearch_tool',thread_limit=5, run_limit=3)
-# RESEARCH AGENT
+wiki_tool_limit=ToolCallLimitMiddleware(tool_name='wikipedia_retriever_tool',thread_limit=5, run_limit=5)
+websearch_tool_limit=ToolCallLimitMiddleware(tool_name='websearch_tool',thread_limit=5, run_limit=5)
+# FACTS RETRIVAL AGENT
 
-def research_agent(state:graphState)-> graphState:
+def facts_retrival_agent(state:graphState)-> graphState:
     topic=state.get('topic')
 
     prompt=SystemMessage(
-    content='''Think in step by step method about the information required regrading a praticular topic to generate a summary and research report on it.
-    Instructions:-
-    1. Tools that you can use: wikipedia_retriever_tool and websearch_tool.(Both the the tools accepts string query)
-    2. Keep filtering the data or information you recieve if they are not relevent.
-`   3. Information block you retrieve will act as base data for a research paper so it should be detailed.
-        It should contain all the sections of a research paper data such as:
-        1. abstract
-        2. introduction
-        3. methodology
-        4. results 
-        5. discussion
-        6. conclusion
-        7. references  
-        Everything from the above that is relevant to the topic. 
-    Note:- 
-    1. RETURN A VERY BREIF AND DETAILED INFORMATION ON THE TOPIC.
-    2. THE RETURNED INFORMATION SHOULD BETWEEN 5000 TO 10000 WORDS.(WORDS NOT TOKENs)
-    3. IN THE END EVEN RETURN THE WORD COUNT OF THE RETURNED TEXT.
-    4. NO SPACES BETWEEN PARAGRAPHS
+    content='''
+    You are a research agent.
+    Your job is to:
+    1. Use BOTH tools: wikipedia_retriever_tool and websearch_tool
+    2. Retrieve relevant, high-quality information
+    3. Extract factual, detailed content from sources
+
+    STRICT RULES:
+    - You MUST use tools before answering
+    - Do NOT rely on prior knowledge
+    - Only use retrieved information
+    - Include references for every major point
+
+    OUTPUT FORMAT:
+    - Bullet points or structured paragraphs
+    - Include:
+    • Key facts
+    • Explanations
+    • Source (link + title)
+
+    CONSTRAINTS:
+    - Keep response between 800-1500 words
+    - Do NOT include word count
+    - Focus on depth, not length
     '''
     )
 
     tools=[wikipedia_retriever_tool, websearch_tool]
 
     agent=create_agent(
-        model=research_model,
+        model=facts_retrival_model,  
         tools=tools,
         system_prompt=prompt,
         middleware=[
-           summarization_limit, wiki_tool_limit, websearch_tool_limit #type:ignore
+            wiki_tool_limit, websearch_tool_limit #type:ignore
+            # summarization_limit,
         ]
     )
     if topic:
         results=agent.invoke({'messages':[HumanMessage(content=topic)]})
-        return {'researched_info': results['messages'][-1].content}
+        return {'facts': results['messages'][-1].content}
     else:
-        return {'researched_info':'DATA ERROR'}
+        return {'facts':'DATA ERROR'}
+    
+# INFORMATION RETRIVAL AGENT 
+
+def information_retrival_agent(state:graphState)->graphState:
+    facts=state.get('facts')
+    template='''
+    You are a research agent.
+    Your job is to:
+    1. Retrieve relevant, high-quality information.
+    2. Research and generate the detailed information about the facts.
+    3. Information regrading the facts and meaningful insights regrading them.
+
+    Format:
+    - Fact
+    - Detailed information
+    - Meaningful insights 
+
+    Facts:
+    {facts}
+    '''
+    if facts:
+        prompt=PromptTemplate(template=template,input_variables=['facts'])
+        final_prompt=prompt.format(facts=facts)
+        result=information_retrival_model.invoke(final_prompt)
+        researched_info=facts+" "+str(result.content)
+        return {'information':str(result.content),'researched_info':researched_info}
+    else:
+        return {'information':'DATA ERROR'}
+
     
 #SUMMARIZATION AGENT
     
