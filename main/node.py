@@ -155,22 +155,83 @@ def summarization_agent(state:graphState)->graphState:
     else:
         return {'summary':'DATA ERROR'}
 
+#REPORT AGENT
+def report_agent(state: graphState)->graphState:
+    topic=state.get('topic')
+    researched_info=state.get('researched_info')
+    summary=state.get('summary')
+    template1='''
+    YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
+    INSTRUCTIONS:
+    1. USING THE FOLLOWING FORMAT TO GENERATE PART OF THE REPORT ON THE TOPIC:{topic}
+        1.Abstract (once)
+        2.Introduction
+        3.Background / Literature Review
+        4.Methodology (if required)
+    2. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
+    3. USE THE RESEARCHED INFORMATION AND SUMMARY PROVIDED AS THE BASE OF THE REPORT:
+        SUMMARY: {summary}
+
+        RESEARCHED INFORMATION: {researched_info}
+
+    CONSTRAINTS:
+        - FACTS CANNOT BE REPEATED AGAIN
+        - USE FORMAL LANGUAGE 
+        '''
+    template2='''
+    YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
+    INSTRUCTIONS:
+    1. USING THE FOLLOWING FORMAT TO GENERATE PART OF THE REPORT ON THE TOPIC:{topic}
+        1.Results (actual data)
+        2.Discussion (interpretation)
+        3.Conclusion
+        4.References
+    2. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
+    3. USE THE RESEARCHED INFORMATION AND SUMMARY PROVIDED AS THE BASE OF THE REPORT:
+        SUMMARY: {summary}
+
+        RESEARCHED INFORMATION: {researched_info}
+
+         CONSTRAINTS:
+        - FACTS CANNOT BE REPEATED AGAIN
+        - USE FORMAL LANGUAGE 
+        '''
+
+    if researched_info and summary and topic:
+        prompt1=PromptTemplate(template=template1, input_variables=['topic','summary','researched_info'])
+        prompt2=PromptTemplate(template=template2, input_variables=['topic','summary','researched_info'])
+        final_prompt1=prompt1.format_prompt(topic=topic, summary=summary, researched_info=researched_info,)
+        final_prompt2=prompt2.format_prompt(topic=topic, summary=summary, researched_info=researched_info,)
+        result1=report_model.invoke(final_prompt1)
+        result2=report_model.invoke(final_prompt2)
+        result=str(result1.content)+" "+str(result2.content)
+        return {'report':result}
+    else:
+        return {'report':'DATA ERROR'}
+
+
 
 
 
 
 # Practice query:
 # state:graphState={
-#     "topic":"WAR OF INDEPENDENCE: INDIA",
+#     "topic":"Impact of Screen Time on Cognitive Development in Children",
+#     'facts':' ',
+#     'information':' ',
 #     'researched_info':' ',
 #     'summary':' ',
-#     'report':{' ':'  '},
+#     'report':' ',
 #     'result':' '
 # }
-# results=research_agent(state)
+# results=facts_retrival_agent(state)
 # state.update(results)
+# results1=information_retrival_agent(state)
+# state.update(results1)
 # result2=summarization_agent(state)
 # state.update(result2)
+# result3=report_agent(state)
+# state.update(result3)
 # print(state)
 
 
