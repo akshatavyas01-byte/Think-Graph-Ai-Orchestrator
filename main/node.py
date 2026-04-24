@@ -206,46 +206,64 @@ def report_agent(state: graphState)->graphState:
     template1='''
     YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
     INSTRUCTIONS:
-    1. USING THE FOLLOWING FORMAT TO GENERATE PART OF THE REPORT ON THE TOPIC:{topic}
+    1. WRITE ONLY THE FOLLOWING SECTIONS FOR THE TOPIC:{topic}
         1.Abstract (once)
         2.Introduction
         3.Background / Literature Review
         4.Methodology (if required)
-    2. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
+    2. DO NOT INCLUDE:
+        - Results (actual data)
+        - Discussion (interpretation)
+        - Conclusion
+        - References
+    3. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
     3. USE THE RESEARCHED INFORMATION AND SUMMARY PROVIDED AS THE BASE OF THE REPORT:
-        SUMMARY: {summary}
+        SUMMARY:
+        {summary}
 
-        RESEARCHED INFORMATION: {researched_info}
+        RESEARCHED INFORMATION: 
+        {researched_info}
 
     CONSTRAINTS:
-        - FACTS CANNOT BE REPEATED AGAIN
-        - USE FORMAL LANGUAGE 
+        - DO NOT REPEAT FACTS UNNECESSARILY
+        - USE FORMAL ACADEMIC LANGUAGE 
         '''
     template2='''
     YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
     INSTRUCTIONS:
-    1. USING THE FOLLOWING FORMAT TO GENERATE PART OF THE REPORT ON THE TOPIC:{topic}
+    1. WRITE ONLY THE FOLLOWING SECTIONS FOR THE TOPIC:{topic}
         1.Results (actual data)
         2.Discussion (interpretation)
         3.Conclusion
         4.References
+    2. DO NOT INCLUDE:
+        - Abstract (once)
+        - Introduction
+        - Background / Literature Review
+        - Methodology (if required)
     2. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
-    3. USE THE RESEARCHED INFORMATION AND SUMMARY PROVIDED AS THE BASE OF THE REPORT:
-        SUMMARY: {summary}
+    3. SEAMLESSLY MERGE WITH THE  PERVIOUS SECTION AND USE THE RESEARCHED INFORMATION OF REPORT AS THE BASE OF THE REPORT:
+        PREVIOUS SECTION:
+         {section1}
 
         RESEARCHED INFORMATION: {researched_info}
 
-         CONSTRAINTS:
+    CONSTRAINTS:
+        - DO NOT repeat earlier content
         - FACTS CANNOT BE REPEATED AGAIN
         - USE FORMAL LANGUAGE 
-        '''
+        - NOT RESTART OR DUPLICATE EARLIER SECTIONS
+        - AVOID REPEATING FACTS ALREADY USED
+    '''
 
     if researched_info and summary and topic:
         prompt1=PromptTemplate(template=template1, input_variables=['topic','summary','researched_info'])
-        prompt2=PromptTemplate(template=template2, input_variables=['topic','summary','researched_info'])
+        prompt2=PromptTemplate(template=template2, input_variables=['topic','section1','researched_info'])
         final_prompt1=prompt1.format_prompt(topic=topic, summary=summary, researched_info=researched_info,)
-        final_prompt2=prompt2.format_prompt(topic=topic, summary=summary, researched_info=researched_info,)
         result1=report_model.invoke(final_prompt1)
+        section1=str(result1.content)
+        final_prompt2=prompt2.format_prompt(topic=topic, section1=section1, researched_info=researched_info,)
+        time.sleep(5)
         result2=report_model.invoke(final_prompt2)
         result=str(result1.content)+" "+str(result2.content)
         return {'report':result}
