@@ -9,6 +9,7 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware, ToolCallLimitMiddleware
 from langchain.messages import SystemMessage, HumanMessage
 from langchain_classic.prompts import PromptTemplate
+import time 
 # from langchain_core.vectorstores import FAISS
 
 from langchain_groq import ChatGroq
@@ -53,6 +54,7 @@ summery_model=ChatGroq(
  
 report_model=ChatHuggingFace(llm=llm)
 
+feedback_model=ChatHuggingFace(llm=llm)
 
 #RETRIVER & WEB SEARCH TOOL 
 
@@ -251,29 +253,58 @@ def report_agent(state: graphState)->graphState:
         return {'report':'DATA ERROR'}
 
 
+#FEEDBACK MODEL
+def feedback_agent(state:graphState)->graphState:
+    report=state.get('report')
+    template='''
+    YOU ARE AN EXPERT REPORT REVIEWER
+    INSTRUCTIONS:
+        - REVIEW THE REPORT 
+        - RATE THE REPORT OUT OF 10
 
+    OUTPUT FROMAT:
+        - ONLY THE NUMBER 
+        - NO EXPLAINATION OR REASONS
+
+    EXAMPLE OUTPUT:
+        5
+    
+    REPORT:
+    {report}
+        
+    '''
+
+    if report:
+        prompt=PromptTemplate(template=template, input_variables=['report'])
+        final_prompt=prompt.format(report=report)
+        result=feedback_model.invoke(final_prompt)
+        return {'feedback':str(result.content)}
+    else:
+        return {'feedback':'DATA ERROR'}
 
 
 
 # Practice query:
-# state:graphState={
-#     "topic":"Impact of Screen Time on Cognitive Development in Children",
-#     'facts':' ',
-#     'information':' ',
-#     'researched_info':' ',
-#     'summary':' ',
-#     'report':' ',
-#     'result':' '
-# }
-# results=facts_retrival_agent(state)
-# state.update(results)
-# results1=information_retrival_agent(state)
-# state.update(results1)
-# result2=summarization_agent(state)
-# state.update(result2)
-# result3=report_agent(state)
-# state.update(result3)
-# print(state)
+state:graphState={
+    "topic":"Impact of Screen Time on Cognitive Development in Children",
+    'facts':' ',
+    'information':' ',
+    'researched_info':' ',
+    'summary':' ',
+    'report':' ',
+    'feedback':' '
+}
+results=facts_retrival_agent(state)
+state.update(results)
+results1=information_retrival_agent(state)
+state.update(results1)
+result2=summarization_agent(state)
+state.update(result2)
+result3=report_agent(state)
+state.update(result3)
+result4=feedback_agent(state)
+state.update(result4)
+print(state)
 
 
 
