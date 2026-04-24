@@ -300,29 +300,35 @@ def feedback_agent(state:graphState)->graphState:
     else:
         return {'feedback':'DATA ERROR'}
 
-
+#ROUTER NODE
+def router_node(state:graphState)->graphState:
+    feedback=state.get('feedback')
+    if feedback:
+        value=int(feedback)
+        if value>7:
+            return {'router_result':'Pass'}
+        else:
+            return {'router_result':'Fail'}
+    else:
+        return {'router_result':'Fail'}
 
 # Practice query:
-state:graphState={
-    "topic":"Impact of Screen Time on Cognitive Development in Children",
-    'facts':' ',
-    'information':' ',
-    'researched_info':' ',
-    'summary':' ',
-    'report':' ',
-    'feedback':' '
-}
-results=facts_retrival_agent(state)
-state.update(results)
-results1=information_retrival_agent(state)
-state.update(results1)
-result2=summarization_agent(state)
-state.update(result2)
-result3=report_agent(state)
-state.update(result3)
-result4=feedback_agent(state)
-state.update(result4)
-print(state)
+# state:graphState={
+#     "topic":"Impact of Screen Time on Cognitive Development in Children",
+# }
+# results=facts_retrival_agent(state)
+# state.update(results)
+# results1=information_retrival_agent(state)
+# state.update(results1)
+# result2=summarization_agent(state)
+# state.update(result2)
+# result3=report_agent(state)
+# state.update(result3)
+# result4=feedback_agent(state)
+# state.update(result4)
+# result5=router_node(state)
+# state.update(result5)
+# print(state)
 
 
 
