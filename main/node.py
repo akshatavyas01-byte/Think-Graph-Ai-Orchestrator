@@ -1,4 +1,6 @@
 from state import graphState
+from langgraph.types import Command
+from langgraph.graph import END
 # from langchain_community.tools import DuckDuckGoSearchResults 
 from langchain_tavily import TavilySearch
 from langchain_community.retrievers import WikipediaRetriever
@@ -11,7 +13,6 @@ from langchain.messages import SystemMessage, HumanMessage
 from langchain_classic.prompts import PromptTemplate
 import time 
 # from langchain_core.vectorstores import FAISS
-
 from langchain_groq import ChatGroq
 from pydantic import SecretStr
 from dotenv import load_dotenv
@@ -338,16 +339,25 @@ def feedback_agent(state:graphState)->graphState:
         return {'feedback':'DATA ERROR'}
 
 #ROUTER NODE
-def router_node(state:graphState)->graphState:
+def router_node(state:graphState):
     feedback=state.get('feedback')
     if feedback:
         value=int(feedback)
         if value>7:
-            return {'router_result':'Pass'}
+            return Command(
+                update={'router_result':'PASS'},
+                goto=END
+            )
         else:
-            return {'router_result':'Fail'}
+            return Command(
+                update={'router_result':'Fail'},
+                goto='fact_node'
+            )
     else:
-        return {'router_result':'Fail'}
+        return Command(
+                update={'router_result':'Fail'},
+                goto='fact_node'
+            )
 
 # Practice query:
 # state:graphState={
