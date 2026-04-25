@@ -99,7 +99,9 @@ websearch_tool_limit=ToolCallLimitMiddleware(tool_name='websearch_tool',thread_l
 
 def facts_retrival_agent(state:graphState)-> graphState:
     topic=state.get('topic')
-
+    router_result=state.get('router_result')
+    previous_facts=state.get('facts')
+    
     prompt=SystemMessage(
     content='''
     You are a research agent.
@@ -127,13 +129,48 @@ def facts_retrival_agent(state:graphState)-> graphState:
     - Focus on depth, not length
     '''
     )
+    prompt_template=prompt
+    prompt2=SystemMessage( 
+        content=f'''
+        You are a research agent.
+        Your job is to:
+            1. Use BOTH tools: wikipedia_retriever_tool and websearch_tool
+            2. Retrieve relevant, high-quality information
+            3. Extract factual, detailed content from sources
+            4. It should Not include the previously fectched facts
+                5. The Facts retrieve now should be relevent and unique
 
+            STRICT RULES:
+            - You MUST use tools before answering
+            - Do NOT rely on prior knowledge
+            - DO NOT include the prevoiusly fectched facts
+            - Each fact must be unique
+            - Only use retrieved information
+            - Include references for every major point
+
+            OUTPUT FORMAT:
+            - Bullet points or structured paragraphs
+            - Include:
+            • Key facts
+            • Explanations
+            • Source (link + title)
+
+            CONSTRAINTS:
+            - Keep response between 800-1500 words
+            - Focus on depth, not length
+            PREVIOUS FACTS:{previous_facts}
+            '''
+            )
+    
     tools=[wikipedia_retriever_tool, websearch_tool]
+
+    if topic and previous_facts and router_result:
+        prompt_template=prompt2
 
     agent=create_agent(
         model=facts_retrival_model,  
         tools=tools,
-        system_prompt=prompt,
+        system_prompt=prompt_template,
         middleware=[
             wiki_tool_limit, websearch_tool_limit #type:ignore
             # summarization_limit,
