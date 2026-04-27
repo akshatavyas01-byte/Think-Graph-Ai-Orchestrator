@@ -1,4 +1,4 @@
-from state import graphState
+from .state import graphState
 from langgraph.types import Command
 from langgraph.graph import END
 # from langchain_community.tools import DuckDuckGoSearchResults 
