@@ -1,6 +1,6 @@
-from langgraph.graph import START, StateGraph
-from state import graphState
-from node import facts_retrival_agent, information_retrival_agent,summarization_agent,report_agent,feedback_agent, router_node
+from langgraph.graph import START, StateGraph, END
+from .state import graphState
+from .node import facts_retrival_agent, information_retrival_agent,summarization_agent,report_agent,feedback_agent, router_node
 
 graph=StateGraph(graphState)
 
@@ -22,6 +22,36 @@ graph.add_edge('feedback_node','router_node')
 
 AI_researcher=graph.compile()
 
+
+
+
+
+graph1=StateGraph(graphState)
+
+graph1.add_node('fact_node',facts_retrival_agent)
+graph1.add_node('information_node',information_retrival_agent)
+graph1.add_node('summary_node',summarization_agent)
+
+graph1.add_edge(START, 'fact_node')
+graph1.add_edge('fact_node','information_node')
+graph1.add_edge('information_node','summary_node')
+graph1.add_edge('summary_node',END)
+
+
+Summary_generator=graph1.compile()
+
+
+
+graph2=StateGraph(graphState)
+
+graph2.add_node('fact_node',facts_retrival_agent)
+graph2.add_node('information_node',information_retrival_agent)
+
+graph2.add_edge(START, 'fact_node')
+graph2.add_edge('fact_node','information_node')
+graph2.add_edge('information_node',END)
+
+Information_retrieval=graph2.compile()
 
 #Practice Query
 
