@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from .state import graphState
-from .graph import AI_researcher, Summary_generator, Information_retrieval
+from orchestration.state import graphState
+from orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
 import re
 
 app=FastAPI()
