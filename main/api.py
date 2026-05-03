@@ -11,7 +11,7 @@ async def run_graph(graph, topic:str, key:str):
         data=result.get(key)
 
         if isinstance (data,str):
-            data=data.replace("\n","\\n")
+            data=data.replace("\\n","\n")
         
         return data
     except Exception as e:
