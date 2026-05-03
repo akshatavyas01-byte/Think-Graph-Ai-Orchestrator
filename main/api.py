@@ -1,54 +1,49 @@
 from fastapi import FastAPI
 from .state import graphState
 from .graph import AI_researcher, Summary_generator, Information_retrieval
-
+import re
 
 app=FastAPI()
+
+async def run_graph(graph, topic:str, key:str):
+    try:
+        result=graph.ainvoke(graphState(topic=topic))
+        data=result.get(key)
+
+        if isinstance (data,str):
+            data=data.replace("\n","\\n")
+        
+        return data
+    except Exception as e:
+        return {"error":str(e)}
 
 
 @app.get("/reseacher/report_generator")
 async def report_generator(topic:str):
-    state=graphState(
-            topic=topic
-        )
     try:
-        result=await AI_researcher.ainvoke(state)
+        result=await AI_researcher.ainvoke(graphState(topic=topic))
         result_report=result.get('report')
-        dict={'Summary':result.get('summary'), 'Report':result_report.replace("\\n", "\n") if result_report is not None else 'ERROR','Feedback':result.get('feedback')}
-        return dict
+       
+        if result_report:
+            result_report = re.sub(r"(\\n|\n|\|)", " ", result_report)
+
+        return {
+            "Summary":result.get("summary") or "ERROR",
+            "Report":result_report or "ERROR",
+            "Feedback":result.get("feedback") or "ERROR"
+        }
+
     except Exception as e:
-        return {'ERROR':e}
+        return {'ERROR':str(e)}
     
 @app.get("/reseacher/summary_generator")
 async def summary_generator(topic:str):
-    state=graphState(
-            topic=topic
-        )
-    try:
-        result=await Summary_generator.ainvoke(state)
-        dict={'Summary':result.get('summary')}
-        return dict
-    except Exception as e:
-        return {'ERROR':e}
+    summary = await run_graph(Summary_generator,topic,"summary")
+    return {"Summary":summary or "ERROR"}
 
     
 @app.get("/reseacher/information_retrival")
 async def Information_generator(topic:str):
-    state=graphState(
-            topic=topic
-        )
-    try:
-        result=await Information_retrieval.ainvoke(state)
-        info=result.get('researched_info')
-        dict={'Information_retrieved':info.replace("\\n", "\n") if info is not None else 'ERROR'}
-        return dict
-    except Exception as e:
-        return {'ERROR':e}
-
-
-
-   
-    
-    
-
+    info = await run_graph(Information_retrieval,topic,"researched_info")
+    return {"Information":info or "ERROR"}
 
