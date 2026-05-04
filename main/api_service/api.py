@@ -7,7 +7,7 @@ app=FastAPI()
 
 async def run_graph(graph, topic:str, key:str):
     try:
-        result=graph.ainvoke(graphState(topic=topic))
+        result= await graph.ainvoke(graphState(topic=topic))
         data=result.get(key)
 
         if isinstance (data,str):
