@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from orchestration.state import graphState
-from orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
+from .orchestration.state import graphState
+from .orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
 import re, os
 import psycopg2
 from pgvector.psycopg2 import register_vector
@@ -31,23 +31,28 @@ model=HuggingFaceEndpointEmbeddings(
 
 app=FastAPI()
 
-async def DB_cache(topic:str):
+async def DB_cache(topic:str, task=False):
     try:
+        result_list=[]
         topic_embedded=model.embed_query(topic)
-        cur.execute("SELECT * FROM research_cache ORDER BY embedding <-> %s::vector LIMIT 1",(topic_embedded,))
+        cur.execute("SELECT *,  (1 - (embedding <=> %s::vector)) AS similarity FROM research_cache  WHERE (1 -(embedding <=> %s::vector)) > 0.80 ORDER BY embedding <=> %s::vector LIMIT 4",(topic_embedded,topic_embedded,topic_embedded))
         print("Here")
-        rows=cur.fetchone()
+        rows=cur.fetchall()
         if rows:
-            print("Matched")
-            summary=rows[3]
-            report=rows[4]
-            feedback=rows[5]
-            
-            return {
-            "Summary":str(summary) or "ERROR",
-            "Report":str(report) or "ERROR",
-            "Feedback":str(feedback) or "ERROR"
-            }
+            if task:
+                for row in rows:
+                    summary=row[3]
+                    if summary:
+                        result_list.append(summary)
+            else:
+                for row in rows:
+                    summary=row[3]
+                    report=row[4]
+                    feedback=row[5]
+                    if summary and report and feedback:
+                        result_list.append({"Summary":summary,"Report":report, "Feedback":feedback}) 
+                
+                return result_list
         else:
             print("didnt match")
             return "NOT FOUND"
@@ -107,12 +112,12 @@ async def summary_generator(topic:str, resubmit:bool):
         if resubmit:
             summary = await run_graph(Summary_generator,topic,"summary")
             return {"Summary":summary or "ERROR"}
-        cache= await DB_cache(topic)
+        cache= await DB_cache(topic,True)
         if cache=="NOT FOUND":
             summary = await run_graph(Summary_generator,topic,"summary")
             return {"Summary":summary or "ERROR"}
         else:
-            result=cache.get("Summary")
+            result=cache
             return {"Summary":result}
     except Exception as e:
         return {'ERROR':str(e)}
