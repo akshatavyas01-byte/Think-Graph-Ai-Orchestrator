@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from .orchestration.state import graphState
-from .orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
+from orchestration.state import graphState
+from orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
 import re, os
 import psycopg2
 from pgvector.psycopg2 import register_vector
@@ -36,7 +36,6 @@ async def DB_cache(topic:str, task=False):
         result_list=[]
         topic_embedded=model.embed_query(topic)
         cur.execute("SELECT *,  (1 - (embedding <=> %s::vector)) AS similarity FROM research_cache  WHERE (1 -(embedding <=> %s::vector)) > 0.80 ORDER BY embedding <=> %s::vector LIMIT 4",(topic_embedded,topic_embedded,topic_embedded))
-        print("Here")
         rows=cur.fetchall()
         if rows:
             if task:
@@ -54,7 +53,6 @@ async def DB_cache(topic:str, task=False):
                 
                 return result_list
         else:
-            print("didnt match")
             return "NOT FOUND"
     except Exception as e:
         conn.rollback() 
