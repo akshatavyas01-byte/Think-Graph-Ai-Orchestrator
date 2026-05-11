@@ -43,6 +43,7 @@ async def DB_cache(topic:str, task=False):
                     summary=row[3]
                     if summary:
                         result_list.append(summary)
+                return result_list
             else:
                 for row in rows:
                     summary=row[3]
