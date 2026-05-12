@@ -1,7 +1,6 @@
 from .state import graphState
 from langgraph.types import Command
 from langgraph.graph import END
-# from langchain_community.tools import DuckDuckGoSearchResults 
 from langchain_tavily import TavilySearch
 from langchain_community.retrievers import WikipediaRetriever
 import wikipedia
@@ -12,7 +11,6 @@ from langchain.agents.middleware import SummarizationMiddleware, ToolCallLimitMi
 from langchain.messages import SystemMessage, HumanMessage
 from langchain_classic.prompts import PromptTemplate
 import time 
-# from langchain_core.vectorstores import FAISS
 from langchain_groq import ChatGroq
 from pydantic import SecretStr
 from dotenv import load_dotenv
@@ -87,12 +85,6 @@ middleware_model=ChatGroq(
     api_key=SecretStr(groq_api) if groq_api else None,
     temperature=0.1
 )
-
-# summarization_limit=SummarizationMiddleware(
-#                 model=middleware_model,
-#                 tigger=('tokens',6000),
-#                 keep=('messages',3)
-#             )
 
 wiki_tool_limit=ToolCallLimitMiddleware(tool_name='wikipedia_retriever_tool',thread_limit=5, run_limit=5)
 websearch_tool_limit=ToolCallLimitMiddleware(tool_name='websearch_tool',thread_limit=5, run_limit=5)
@@ -240,6 +232,7 @@ def summarization_agent(state:graphState)->graphState:
 def report_agent(state: graphState)->graphState:
     topic=state.get('topic')
     researched_info=state.get('researched_info')
+    facts=state.get('facts')
     summary=state.get('summary')
     template1='''
     YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
@@ -248,12 +241,14 @@ def report_agent(state: graphState)->graphState:
         1.Abstract (once)
         2.Introduction
         3.Background / Literature Review
-        4.Methodology (if required)
+       
     2. DO NOT INCLUDE:
+        - Methodology (if required)
         - Results (actual data)
         - Discussion (interpretation)
         - Conclusion
         - References
+
     3. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
     3. USE THE RESEARCHED INFORMATION AND SUMMARY PROVIDED AS THE BASE OF THE REPORT:
         SUMMARY:
@@ -270,21 +265,46 @@ def report_agent(state: graphState)->graphState:
     YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
     INSTRUCTIONS:
     1. WRITE ONLY THE FOLLOWING SECTIONS FOR THE TOPIC:{topic}
-        1.Results (actual data)
-        2.Discussion (interpretation)
-        3.Conclusion
-        4.References
+        1.Methodology (if required)
+        2.Results (actual data)
+        3.Discussion (interpretation)
     2. DO NOT INCLUDE:
         - Abstract (once)
         - Introduction
         - Background / Literature Review
-        - Methodology (if required)
     2. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
     3. SEAMLESSLY MERGE WITH THE  PERVIOUS SECTION AND USE THE RESEARCHED INFORMATION OF REPORT AS THE BASE OF THE REPORT:
         PREVIOUS SECTION:
          {section1}
 
-        RESEARCHED INFORMATION: {researched_info}
+        RESEARCHED FACTS: {researched_info}
+
+    CONSTRAINTS:
+        - DO NOT repeat earlier content
+        - FACTS CANNOT BE REPEATED AGAIN
+        - USE FORMAL LANGUAGE 
+        - NOT RESTART OR DUPLICATE EARLIER SECTIONS
+        - AVOID REPEATING FACTS ALREADY USED
+    '''
+    template3='''
+    YOU ARE AN EXPERT RESEACHER REPORT GENERATOR:
+    INSTRUCTIONS:
+    1. WRITE ONLY THE FOLLOWING SECTIONS FOR THE TOPIC:{topic}
+        1.Conclusion
+        2.References
+    2. DO NOT INCLUDE:
+        - Abstract (once)
+        - Introduction
+        - Background / Literature Review
+        - Methodology
+        - Results (actual data)
+        - Discussion (interpretation)
+    2. THE GENERATED REPORT SHOULD BE PROPERLY FORMATTED.
+    3. SEAMLESSLY MERGE WITH THE  PERVIOUS SECTION AND USE THE RESEARCHED INFORMATION OF REPORT AS THE BASE OF THE REPORT:
+        PREVIOUS SECTION:
+         {section2}
+
+        RESEARCHED FACTS: {researched_info}
 
     CONSTRAINTS:
         - DO NOT repeat earlier content
@@ -297,13 +317,20 @@ def report_agent(state: graphState)->graphState:
     if researched_info and summary and topic:
         prompt1=PromptTemplate(template=template1, input_variables=['topic','summary','researched_info'])
         prompt2=PromptTemplate(template=template2, input_variables=['topic','section1','researched_info'])
+        prompt3=PromptTemplate(template=template3, input_variables=['topic','section2','researched_info'])
+
         final_prompt1=prompt1.format_prompt(topic=topic, summary=summary, researched_info=researched_info,)
         result1=report_model.invoke(final_prompt1)
         section1=str(result1.content)
         final_prompt2=prompt2.format_prompt(topic=topic, section1=section1, researched_info=researched_info,)
-        time.sleep(5)
+        time.sleep(10)
         result2=report_model.invoke(final_prompt2)
-        result=str(result1.content)+" "+str(result2.content)
+        section2=str(result2.content)
+        time.sleep(10)
+        final_prompt3=prompt3.format_prompt(topic=topic, section2=section2, researched_info=researched_info,)
+        result3=report_model.invoke(final_prompt3)
+        section3=str(result3.content)
+        result=section1+" "+section2+" "+section3
         return {'report':result}
     else:
         return {'report':'DATA ERROR'}

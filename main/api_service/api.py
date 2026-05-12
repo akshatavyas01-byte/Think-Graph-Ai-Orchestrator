@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from orchestration.state import graphState
-from orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
+from .orchestration.state import graphState
+from .orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
 import re, os
 import psycopg2
 from pgvector.psycopg2 import register_vector
@@ -90,7 +90,7 @@ async def Unique_research(topic:str):
         }
 
 
-@app.get("/reseacher/report_generator")
+@app.get("/researcher/report_generator")
 async def report_generator(topic:str, resubmit:bool):
     try:
         if resubmit:
@@ -105,7 +105,7 @@ async def report_generator(topic:str, resubmit:bool):
     except Exception as e:
         return {'ERROR':str(e)}
     
-@app.get("/reseacher/summary_generator")
+@app.get("/researcher/summary_generator")
 async def summary_generator(topic:str, resubmit:bool):
     try:
         if resubmit:
@@ -122,7 +122,7 @@ async def summary_generator(topic:str, resubmit:bool):
         return {'ERROR':str(e)}
 
     
-@app.get("/reseacher/information_retrival")
+@app.get("/researcher/information_retrival")
 async def Information_generator(topic:str):
     info = await run_graph(Information_retrieval,topic,"researched_info")
     return {"Information":info or "ERROR"}
