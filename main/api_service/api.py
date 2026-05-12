@@ -8,16 +8,10 @@ from pgvector.psycopg2 import register_vector
 from dotenv import load_dotenv
 load_dotenv()
 
-passw=os.getenv("DB_PASSWORD")
+Url=os.getenv("DB_URL")
 hf_api=os.getenv("hf_api")
 conn=psycopg2.connect(
-
-    host="research-project-akshatavyas01-cf54.e.aivencloud.com",
-    port=27517,
-    database="defaultdb",
-    user="avnadmin",
-    password=passw,
-    sslmode="require"
+    Url
 )
 register_vector(conn)
 

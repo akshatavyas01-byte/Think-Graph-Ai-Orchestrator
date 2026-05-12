@@ -2,14 +2,9 @@ import psycopg2, os
 from dotenv import load_dotenv
 load_dotenv()
 
-password=os.getenv("DB_PASSWORD")
+Url=os.getenv("DB_URL")
 conn = psycopg2.connect(
-    host="research-project-akshatavyas01-cf54.e.aivencloud.com",
-    port=27517,
-    database="defaultdb",
-    user="avnadmin",
-    password=password,
-    sslmode="require"
+    Url
 )
 
 cur=conn.cursor()
