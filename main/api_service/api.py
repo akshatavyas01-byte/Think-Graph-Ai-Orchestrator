@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from .orchestration.state import graphState
-from .orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
+from orchestration.state import graphState
+from orchestration.graph import AI_researcher, Summary_generator, Information_retrieval
 import re, os
 import psycopg2
 from pgvector.psycopg2 import register_vector
