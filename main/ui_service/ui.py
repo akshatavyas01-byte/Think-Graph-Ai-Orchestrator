@@ -29,13 +29,13 @@ def request(topic:str, task:str, resubmit=False):
     try:
         with st.spinner(text="Loading",show_time=False):
             if task=="Summary":
-                url="https://think-graph-ai-orchestrator.onrender.com/reseacher/summary_generator"
+                url="https://think-graph-ai-orchestrator.onrender.com/researcher/summary_generator"
                 
             elif task=="Information":
-                url="https://think-graph-ai-orchestrator.onrender.com/reseacher/information_retrival"
+                url="https://think-graph-ai-orchestrator.onrender.com/researcher/information_retrival"
                
             elif task=="Full Report":
-                url="https://think-graph-ai-orchestrator.onrender.com/reseacher/report_generator"
+                url="https://think-graph-ai-orchestrator.onrender.com/researcher/report_generator"
                 
             else:
                 placeholder.write("SELECTION ERROR")
