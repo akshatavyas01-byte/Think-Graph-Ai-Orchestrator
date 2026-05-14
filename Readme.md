@@ -10,6 +10,8 @@ The project also implements semantic caching using PostgreSQL and pgvector to re
 
 - **Think-Graph AI UI:** [Launch App](https://think-graph-ai-orchestrator-user.onrender.com/)
 
+` Note:` Render free-tier deployments may take a few seconds to wake up after inactivity. If the Streamlit UI initially shows an error, open the FastAPI Swagger Docs once to activate the backend service.
+
 ## Overview
 ### Why this project?
 
@@ -49,7 +51,7 @@ The system can be adapted for:
 
 
 ### 2. Generated Report 
-![GENERATED Report](images/Demo/Report_generated.gif)
+![GENERATED Report](images/Demo/Report.gif)
 
 ---
 ## System Architecture
